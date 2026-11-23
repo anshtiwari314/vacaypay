@@ -7,8 +7,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
       MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "${MYSQL_PORT}:3306"
+#    ports:
+#      - "${MYSQL_PORT}:3306"
     volumes:
       - vacaypay_mysql:/var/lib/mysql
     healthcheck:
@@ -24,16 +24,15 @@ services:
     env_file:
       - .env
     ports:
-      - "${WEB_PORT}:3000"
+      - "${WEB_PORT:-3000}:3000"
     environment:
       DB_HOST: mysql
       DB_PORT: "3306"
       DB_NAME: ${DB_NAME}
       DB_USER: root
       DB_PASS: ${DB_PASS}
-      APK_PATH: ${APK_PATH}
     volumes:
-      - ${APK_HOST_DIR}:/apk:ro
+      - ${APK_FILE}:/apk/download.apk:ro
     depends_on:
       mysql:
         condition: service_healthy

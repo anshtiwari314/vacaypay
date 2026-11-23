@@ -2,6 +2,7 @@
 # Patterns are repo-root relative so one git repo covers both apps.
 
 *.html
+scripts/
 # dependencies
 node_modules/
 .pnp
