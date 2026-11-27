@@ -96,18 +96,23 @@ export function Button({
   busy,
   tone = "moss",
   disabled,
+  icon,
 }: {
   label: string;
   onPress: () => void;
   busy?: boolean;
   tone?: "moss" | "coral" | "ghost";
   disabled?: boolean;
+  icon?: ReactNode;
 }) {
   const ghost = tone === "ghost";
   const content = busy ? (
     <ActivityIndicator color={ghost ? Brand.moss : Brand.onAccent} />
   ) : (
-    <Text style={[styles.buttonText, ghost ? styles.buttonTextGhost : { color: Brand.onAccent }]}>{label}</Text>
+    <View style={styles.buttonInner}>
+      {icon ? <View style={styles.buttonIcon}>{icon}</View> : null}
+      <Text style={[styles.buttonText, ghost ? styles.buttonTextGhost : { color: Brand.onAccent }]}>{label}</Text>
+    </View>
   );
 
   if (ghost) {
@@ -402,6 +407,8 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.86 },
+  buttonInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  buttonIcon: { alignItems: "center", justifyContent: "center" },
   buttonText: { fontSize: 15, fontWeight: "700" },
   buttonTextGhost: { color: Brand.ink },
   field: { gap: 7 },

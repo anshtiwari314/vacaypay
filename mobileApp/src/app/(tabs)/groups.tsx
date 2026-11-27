@@ -3,7 +3,8 @@ import { useCallback, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AvatarStack, Balance, Brand, NetCard, Screen, SectionLabel, TopBar } from "@/components/ui";
+import { ScreenHeader } from "@/components/screen-header";
+import { AvatarStack, Balance, Brand, NetCard, Screen, SectionLabel } from "@/components/ui";
 import { api, ApiError, type GroupSummary } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -49,7 +50,7 @@ export default function GroupsScreen() {
                 }}
               />
             }>
-            <TopBar
+            <ScreenHeader
               title="Groups"
               email={user?.email}
               onSignOut={() => {

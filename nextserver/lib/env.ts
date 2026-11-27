@@ -59,8 +59,7 @@ export function dbConfig() {
 }
 
 export function googleClientIds() {
-  return env("GOOGLE_CLIENT_ID")
-    .split(",")
-    .map((id) => id.trim())
+  return ["GOOGLE_CLIENT_ID_WEB", "GOOGLE_CLIENT_ID_ANDROID", "GOOGLE_CLIENT_ID_IOS"]
+    .map((key) => env(key).trim())
     .filter(Boolean);
 }

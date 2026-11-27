@@ -20,7 +20,10 @@ type GoogleClaims = {
 function audiences() {
   const ids = googleClientIds();
   if (!ids.length) {
-    throw new HttpError(400, "Google sign-in is not configured. Set GOOGLE_CLIENT_ID on the server.");
+    throw new HttpError(
+      400,
+      "Google sign-in is not configured. Set GOOGLE_CLIENT_ID_WEB, GOOGLE_CLIENT_ID_ANDROID, and/or GOOGLE_CLIENT_ID_IOS on the server.",
+    );
   }
   return ids;
 }

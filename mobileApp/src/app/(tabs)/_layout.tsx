@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 
 import { Brand, Screen } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
+import { AdsProvider } from "@/lib/ads-provider";
 
 type DockProps = {
   state: { index: number; routes: ReadonlyArray<{ key: string; name: string }> };
@@ -95,7 +96,8 @@ export default function TabsLayout() {
   if (!user) return <Redirect href="/login" />;
 
   return (
-    <Tabs
+    <AdsProvider>
+      <Tabs
       tabBar={(props) => (
         <GlassDock
           state={props.state}
@@ -118,6 +120,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="groups" options={{ title: "Groups" }} />
       <Tabs.Screen name="friends" options={{ title: "Friends" }} />
     </Tabs>
+    </AdsProvider>
   );
 }
 

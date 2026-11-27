@@ -3,7 +3,8 @@ import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Avatar, Balance, Brand, Button, Field, Glass, Notice, Screen, SectionLabel, TopBar } from "@/components/ui";
+import { ScreenHeader } from "@/components/screen-header";
+import { Avatar, Balance, Brand, Button, Field, Glass, Notice, Screen, SectionLabel } from "@/components/ui";
 import { api, ApiError, type Friend } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { personName } from "@/lib/money";
@@ -71,7 +72,7 @@ export default function FriendsScreen() {
                 }}
               />
             }>
-            <TopBar
+            <ScreenHeader
               title="Friends"
               email={user?.email}
               onSignOut={() => {
