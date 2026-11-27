@@ -52,6 +52,11 @@ yarn-error.log*
 .pnpm-debug.log*
 npm-debug.*
 
+# gradle user homes (local caches, machine-specific, never commit)
+mobileApp/.gradle-home/
+mobileApp/.gradle-user-home/
+mobileApp/.gradle-package.log
+
 # misc
 .DS_Store
 *.pem
