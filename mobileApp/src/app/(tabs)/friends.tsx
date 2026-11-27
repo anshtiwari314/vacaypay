@@ -4,14 +4,16 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenHeader } from "@/components/screen-header";
-import { Avatar, Balance, Brand, Button, Field, Glass, Notice, Screen, SectionLabel } from "@/components/ui";
+import { Avatar, Balance, Button, Field, Glass, Notice, Screen, SectionLabel } from "@/components/ui";
 import { api, ApiError, type Friend } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { personName } from "@/lib/money";
+import { useAppTheme } from "@/lib/theme";
 
 export default function FriendsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { colors, isDark } = useAppTheme();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,7 +67,7 @@ export default function FriendsScreen() {
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                tintColor={Brand.moss}
+                tintColor={colors.moss}
                 onRefresh={() => {
                   setRefreshing(true);
                   load().finally(() => setRefreshing(false));
@@ -80,28 +82,50 @@ export default function FriendsScreen() {
               }}
             />
             <Glass>
-              <Field label="Add by email" value={email} onChangeText={setEmail} placeholder="friend@email.com" keyboardType="email-address" />
+              <Field
+                label="Add by email"
+                leftIcon="mail-outline"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="friend@email.com"
+                keyboardType="email-address"
+              />
               <Button label="Add friend" onPress={add} busy={busy} />
             </Glass>
             {note ? <Notice text={note} /> : null}
             {error ? <Notice text={error} tone="bad" /> : null}
             <SectionLabel>People</SectionLabel>
             {friends.length === 0 ? (
-              <Text style={styles.empty}>People you add, and anyone you split a bill with, show up here.</Text>
+              <Text style={[styles.empty, { color: colors.muted, borderColor: colors.lineStrong }]}>
+                People you add, and anyone you split a bill with, show up here.
+              </Text>
             ) : (
               friends.map((friend) => {
                 const name = personName(friend);
                 return (
-                  <View key={friend.email} style={styles.card}>
+                  <View
+                    key={friend.email}
+                    style={[
+                      styles.card,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: isDark ? colors.lineStrong : colors.line,
+                        shadowColor: colors.shadowColor,
+                        shadowOpacity: isDark ? 0.34 : colors.shadowOpacity,
+                        shadowRadius: isDark ? 16 : 12,
+                        shadowOffset: { width: 0, height: isDark ? 8 : 4 },
+                        elevation: isDark ? 4 : 1,
+                      },
+                    ]}>
                     <View style={styles.row}>
                       <Avatar seed={friend.email} label={name.slice(0, 1).toUpperCase()} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.name}>{name}</Text>
-                        <Text style={styles.email}>{friend.email}</Text>
+                        <Text style={[styles.name, { color: colors.ink }]}>{name}</Text>
+                        <Text style={[styles.email, { color: colors.muted }]}>{friend.email}</Text>
                       </View>
                     </View>
-                    <View style={styles.balanceRow}>
-                      <Text style={styles.balanceLabel}>Balance</Text>
+                    <View style={[styles.balanceRow, { borderTopColor: colors.line }]}>
+                      <Text style={[styles.balanceLabel, { color: colors.muted }]}>Balance</Text>
                       <Balance amount={friend.balance} />
                     </View>
                   </View>
@@ -120,36 +144,31 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   body: { padding: 18, paddingBottom: 168, gap: 13 },
   card: {
-    backgroundColor: Brand.card,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 15,
     borderWidth: 1,
-    borderColor: Brand.line,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  name: { color: Brand.ink, fontSize: 15.5, fontWeight: "700" },
-  email: { color: Brand.muted, marginTop: 2, fontSize: 12.5 },
+  name: { fontSize: 15.5, fontWeight: "700" },
+  email: { marginTop: 2, fontSize: 12.5 },
   balanceRow: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
   },
-  balanceLabel: { color: Brand.muted, fontSize: 11.5, fontWeight: "600" },
+  balanceLabel: { fontSize: 11.5, fontWeight: "600" },
   empty: {
-    color: Brand.muted,
     lineHeight: 21,
     textAlign: "center",
     paddingVertical: 20,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: Brand.line,
     borderRadius: 18,
   },
 });

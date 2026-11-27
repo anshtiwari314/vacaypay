@@ -54,7 +54,7 @@ export async function upsertUser(input: {
   name?: string | null;
   avatarUrl?: string | null;
   googleId?: string | null;
-}) {
+}): Promise<{ user: UserRow; created: boolean }> {
   const existing = await findUserByEmail(input.email);
   if (existing) {
     await query(
@@ -65,7 +65,7 @@ export async function upsertUser(input: {
        WHERE id = ?`,
       [input.name ?? null, input.avatarUrl ?? null, input.googleId ?? null, existing.id],
     );
-    return (await findUserById(existing.id))!;
+    return { user: (await findUserById(existing.id))!, created: false };
   }
 
   const id = randomUUID();
@@ -81,9 +81,9 @@ export async function upsertUser(input: {
     const duplicate =
       typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "ER_DUP_ENTRY";
     if (!duplicate) throw error;
-    return (await findUserByEmail(input.email))!;
+    return { user: (await findUserByEmail(input.email))!, created: false };
   }
-  return (await findUserById(id))!;
+  return { user: (await findUserById(id))!, created: true };
 }
 
 export async function linkMemberships(user: UserRow) {

@@ -1,4 +1,5 @@
 import { API_URL } from "./config";
+import type { SignInLocation } from "./location";
 import { getToken } from "./storage";
 
 export class ApiError extends Error {
@@ -72,13 +73,13 @@ export const api = {
       body: JSON.stringify({ email }),
     });
   },
-  verifyOtp(email: string, code: string) {
+  verifyOtp(email: string, code: string, location: SignInLocation | null = null) {
     return request<{ token: string; user: User }>("/api/auth/otp/verify", {
       method: "POST",
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({ email, code, location }),
     });
   },
-  google(body: { idToken?: string; accessToken?: string }) {
+  google(body: { idToken?: string; accessToken?: string; location?: SignInLocation | null }) {
     return request<{ token: string; user: User }>("/api/auth/google", {
       method: "POST",
       body: JSON.stringify(body),

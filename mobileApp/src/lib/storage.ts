@@ -2,6 +2,9 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const KEY = "vacaypay_token";
+const THEME_KEY = "vacaypay_theme";
+
+export type StoredThemeMode = "light" | "dark";
 
 export async function getToken() {
   if (Platform.OS === "web") {
@@ -24,4 +27,28 @@ export async function clearToken() {
     return;
   }
   await SecureStore.deleteItemAsync(KEY);
+}
+
+export async function getThemePreference(): Promise<StoredThemeMode | null> {
+  try {
+    const raw =
+      Platform.OS === "web"
+        ? globalThis.localStorage?.getItem(THEME_KEY) ?? null
+        : await SecureStore.getItemAsync(THEME_KEY);
+    return raw === "light" || raw === "dark" ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setThemePreference(mode: StoredThemeMode): Promise<void> {
+  try {
+    if (Platform.OS === "web") {
+      globalThis.localStorage?.setItem(THEME_KEY, mode);
+      return;
+    }
+    await SecureStore.setItemAsync(THEME_KEY, mode);
+  } catch {
+    // Ignore storage errors for non-critical theme preference.
+  }
 }

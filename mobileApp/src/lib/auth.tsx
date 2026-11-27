@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { api, type User } from "./api";
+import { clearGoogleSession } from "./google-auth";
 import { clearToken, getToken, setToken } from "./storage";
 
 type AuthContextValue = {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     memoryUser = null;
     setUser(null);
     await clearToken();
+    await clearGoogleSession();
   }, []);
 
   const value = useMemo(() => ({ user, ready, signIn, signOut }), [user, ready, signIn, signOut]);

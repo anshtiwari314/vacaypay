@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin, isErrorWithCode, statusCodes } from "@react-native-google-signin/google-signin";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -5,15 +6,17 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GoogleIcon } from "@/components/google-icon";
-import { Brand, Button, Field, Glass, Mark, Notice, Screen, Wordmark } from "@/components/ui";
+import { Button, DisplayFont, Field, Glass, Mark, Notice, Screen, ThemeToggle, Wordmark } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from "@/lib/config";
-import { googleSignInConfigError } from "@/lib/google-auth";
+import { clearGoogleSession, configureGoogleSignIn, googleSignInConfigError } from "@/lib/google-auth";
+import { readGrantedLocation } from "@/lib/location";
+import { useAppTheme } from "@/lib/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const { colors } = useAppTheme();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -24,10 +27,7 @@ export default function LoginScreen() {
   const googleConfigError = googleSignInConfigError();
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID || undefined,
-      iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-    });
+    configureGoogleSignIn();
   }, []);
 
   async function continueWithGoogle() {
@@ -41,6 +41,7 @@ export default function LoginScreen() {
       if (Platform.OS === "android") {
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       }
+      await clearGoogleSession();
       const result = await GoogleSignin.signIn();
       if (result.type === "cancelled") return;
       const idToken = result.data.idToken;
@@ -48,7 +49,8 @@ export default function LoginScreen() {
         setError("Google did not return an ID token. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.");
         return;
       }
-      const session = await api.google({ idToken });
+      const location = await readGrantedLocation();
+      const session = await api.google({ idToken, location });
       await signIn(session.token, session.user);
       router.replace("/(tabs)/groups");
     } catch (err) {
@@ -92,7 +94,8 @@ export default function LoginScreen() {
     setBusy("verify");
     setError("");
     try {
-      const result = await api.verifyOtp(email.trim(), code.trim());
+      const location = await readGrantedLocation();
+      const result = await api.verifyOtp(email.trim(), code.trim(), location);
       await signIn(result.token, result.user);
       router.replace("/(tabs)/groups");
     } catch (err) {
@@ -108,21 +111,47 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <View style={styles.brandRow}>
             <Mark />
-            <Wordmark size={26} />
+            <Wordmark size={23} />
           </View>
+          <ThemeToggle />
         </View>
+
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView
             contentContainerStyle={styles.body}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             <View style={styles.signInColumn}>
-              <Text style={styles.heading}>{step === "email" ? "Sign in" : "Check your email"}</Text>
-              <Text style={styles.sub}>
-                {step === "email"
-                  ? "Use a one-time code, or continue with Google. The same email sees the groups you were added to."
-                  : `Enter the 6-digit code sent to ${email.trim()}.`}
-              </Text>
+              <View style={styles.hero}>
+                <View style={[styles.eyebrowPill, { backgroundColor: colors.mossSoft, borderColor: colors.mossBorder }]}>
+                  <Ionicons
+                    name={step === "email" ? "sparkles-outline" : "mail-unread-outline"}
+                    size={13}
+                    color={colors.moss}
+                  />
+                  <Text style={[styles.eyebrowText, { color: colors.moss }]}>
+                    {step === "email" ? "Effortless group splits" : "Verification code"}
+                  </Text>
+                </View>
+
+                <Text style={[styles.heading, { color: colors.ink }]}>
+                  {step === "email" ? "Split trips,\nnot friendships." : "Check your email"}
+                </Text>
+
+                {step === "email" ? (
+                  <Text style={[styles.sub, { color: colors.muted }]}>
+                    Use a one-time code, or continue with Google. The same email sees the groups you were added to.
+                  </Text>
+                ) : (
+                  <View style={styles.codeSubWrap}>
+                    <Text style={[styles.sub, { color: colors.muted }]}>Enter the 6-digit code sent to</Text>
+                    <View style={[styles.emailChip, { backgroundColor: colors.cardSubtle, borderColor: colors.lineStrong }]}>
+                      <Ionicons name="mail-outline" size={14} color={colors.moss} />
+                      <Text style={[styles.emailChipText, { color: colors.ink }]}>{email.trim()}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
 
               {error ? <Notice text={error} tone="bad" /> : null}
               {previewCode ? (
@@ -130,55 +159,69 @@ export default function LoginScreen() {
               ) : null}
 
               {step === "email" ? (
-              <Glass>
-                <Field
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoComplete="email"
-                  placeholder="you@email.com"
-                />
-                <Button label="Email me a code" onPress={sendCode} busy={busy === "otp"} />
-                <View style={styles.orRow}>
-                  <View style={styles.orLine} />
-                  <Text style={styles.or}>or</Text>
-                  <View style={styles.orLine} />
-                </View>
-                <Button
-                  label="Continue with Google"
-                  tone="ghost"
-                  disabled={busy !== null}
-                  busy={busy === "google"}
-                  icon={<GoogleIcon size={20} />}
-                  onPress={() => {
-                    void continueWithGoogle();
-                  }}
-                />
-              </Glass>
-            ) : (
-              <Glass>
-                <Field
-                  label="6-Digit Code"
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  placeholder="000000"
-                  maxLength={6}
-                  inputStyle={styles.codeInput}
-                />
-                <Button label="Sign in" onPress={verify} busy={busy === "verify"} />
-                <Button
-                  label="Use a different email"
-                  tone="ghost"
-                  onPress={() => {
-                    setStep("email");
-                    setCode("");
-                    setError("");
-                  }}
-                />
-              </Glass>
+                <Glass style={styles.authCard}>
+                  <Field
+                    label="Email"
+                    leftIcon="mail-outline"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    placeholder="you@email.com"
+                  />
+                  <Button
+                    label="Email me a code"
+                    onPress={sendCode}
+                    busy={busy === "otp"}
+                    icon={<Ionicons name="arrow-forward" size={17} color={colors.onAccent} />}
+                  />
+                  <View style={styles.orRow}>
+                    <View style={[styles.orLine, { backgroundColor: colors.lineStrong }]} />
+                    <Text style={[styles.or, { color: colors.muted }]}>or</Text>
+                    <View style={[styles.orLine, { backgroundColor: colors.lineStrong }]} />
+                  </View>
+                  <Button
+                    label="Continue with Google"
+                    tone="ghost"
+                    disabled={busy !== null}
+                    busy={busy === "google"}
+                    icon={<GoogleIcon size={20} />}
+                    onPress={() => {
+                      void continueWithGoogle();
+                    }}
+                  />
+                </Glass>
+              ) : (
+                <Glass style={styles.authCard}>
+                  <Field
+                    label="6-Digit Code"
+                    value={code}
+                    onChangeText={setCode}
+                    keyboardType="number-pad"
+                    placeholder="000000"
+                    maxLength={6}
+                    inputStyle={styles.codeInput}
+                  />
+                  <Button label="Sign in" onPress={verify} busy={busy === "verify"} />
+                  <Button
+                    label="Use a different email"
+                    tone="ghost"
+                    icon={<Ionicons name="arrow-back" size={16} color={colors.inkSoft} />}
+                    onPress={() => {
+                      setStep("email");
+                      setCode("");
+                      setError("");
+                    }}
+                  />
+                </Glass>
               )}
+
+              <View style={styles.footerNote}>
+                <Ionicons name="shield-checkmark-outline" size={14} color={colors.muted} />
+                <Text style={[styles.footerText, { color: colors.muted }]}>
+                  Passwordless sign-in · Synced to your email
+                </Text>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -191,45 +234,87 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "transparent" },
   flex: { flex: 1 },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 22,
-    paddingTop: 4,
-    paddingBottom: 8,
-    alignSelf: "stretch",
-    alignItems: "flex-start",
+    paddingTop: 8,
+    paddingBottom: 10,
   },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 11 },
   body: {
     flexGrow: 1,
     justifyContent: "center",
-    alignItems: "center",
     paddingHorizontal: 22,
-    paddingTop: 8,
-    paddingBottom: 72,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
   signInColumn: {
     width: "100%",
-    maxWidth: 400,
-    gap: 16,
+    maxWidth: 410,
+    gap: 18,
     alignSelf: "center",
-    transform: [{ translateY: -36 }],
   },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  hero: {
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  eyebrowPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  eyebrowText: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
   heading: {
-    color: Brand.ink,
-    fontSize: 36,
-    fontFamily: "serif",
-    fontWeight: "500",
-    textAlign: "center",
-    alignSelf: "stretch",
+    fontFamily: DisplayFont,
+    fontSize: 34,
+    lineHeight: 39,
+    fontWeight: "700",
+    letterSpacing: -1,
   },
   sub: {
-    color: Brand.muted,
     fontSize: 14.5,
     lineHeight: 22,
-    textAlign: "left",
-    alignSelf: "stretch",
+  },
+  codeSubWrap: {
+    gap: 8,
+    alignItems: "flex-start",
+  },
+  emailChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  emailChipText: {
+    fontSize: 13.5,
+    fontWeight: "600",
+  },
+  authCard: {
+    padding: 20,
+    gap: 15,
   },
   orRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  orLine: { flex: 1, height: 1, backgroundColor: Brand.line },
-  or: { color: Brand.muted, fontSize: 12.5, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase" },
-  codeInput: { letterSpacing: 6, fontWeight: "700", fontSize: 20, textAlign: "center" },
+  orLine: { flex: 1, height: 1 },
+  or: { fontSize: 11.5, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
+  codeInput: { letterSpacing: 8, fontWeight: "700", fontSize: 22, textAlign: "center" },
+  footerNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingTop: 4,
+  },
+  footerText: { fontSize: 12.5, fontWeight: "500" },
 });

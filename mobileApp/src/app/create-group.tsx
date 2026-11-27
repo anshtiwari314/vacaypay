@@ -3,11 +3,13 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BackButton, Brand, Button, Field, Glass, Notice, Screen } from "@/components/ui";
+import { BackButton, Button, DisplayFont, Field, Glass, Notice, Screen } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { useAppTheme } from "@/lib/theme";
 
 export default function CreateGroupScreen() {
   const router = useRouter();
+  const { colors } = useAppTheme();
   const [name, setName] = useState("");
   const [draft, setDraft] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
@@ -52,8 +54,10 @@ export default function CreateGroupScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <BackButton label="Groups" />
-            <Text style={styles.heading}>New group</Text>
-            <Text style={styles.sub}>You are added automatically. Everyone else gets an email.</Text>
+            <Text style={[styles.heading, { color: colors.ink }]}>New group</Text>
+            <Text style={[styles.sub, { color: colors.muted }]}>
+              You are added automatically. Everyone else gets an email.
+            </Text>
             <Glass>
               <Field label="Group name" value={name} onChangeText={setName} placeholder="Goa, June" autoCapitalize="words" />
               <Field
@@ -67,8 +71,11 @@ export default function CreateGroupScreen() {
               <Button label="+ Add email" tone="ghost" onPress={addEmail} />
               <View style={styles.chips}>
                 {emails.map((email) => (
-                  <Pressable key={email} style={styles.chip} onPress={() => setEmails((current) => current.filter((item) => item !== email))}>
-                    <Text style={styles.chipText}>{email}  ×</Text>
+                  <Pressable
+                    key={email}
+                    style={[styles.chip, { backgroundColor: colors.chipBg, borderColor: colors.chipBorder }]}
+                    onPress={() => setEmails((current) => current.filter((item) => item !== email))}>
+                    <Text style={[styles.chipText, { color: colors.chipText }]}>{email}  ×</Text>
                   </Pressable>
                 ))}
               </View>
@@ -90,16 +97,14 @@ export default function CreateGroupScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 18, gap: 14, paddingBottom: 48 },
-  heading: { color: Brand.ink, fontSize: 32, fontFamily: "serif", fontWeight: "500", letterSpacing: -0.5 },
-  sub: { color: Brand.muted, lineHeight: 21, fontSize: 14.5, marginTop: -6 },
+  heading: { fontSize: 30, fontFamily: DisplayFont, fontWeight: "700", letterSpacing: -0.7 },
+  sub: { lineHeight: 21, fontSize: 14.5, marginTop: -6 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
-    backgroundColor: "rgba(6,182,212,0.14)",
     borderWidth: 1,
-    borderColor: "rgba(6,182,212,0.3)",
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  chipText: { color: "#67E8F9", fontWeight: "600", fontSize: 12.5 },
+  chipText: { fontWeight: "600", fontSize: 12.5 },
 });

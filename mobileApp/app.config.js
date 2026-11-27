@@ -44,6 +44,13 @@ if (iosUrlScheme) {
   plugins.push(["@react-native-google-signin/google-signin", { iosUrlScheme }]);
 }
 plugins.push([
+  "expo-location",
+  {
+    locationWhenInUsePermission:
+      "VacayPay uses your location while the app is open, and only if you allow it, so a first sign-in can include where the account was created.",
+  },
+]);
+plugins.push([
   "react-native-google-mobile-ads",
   {
     androidAppId,

@@ -1,6 +1,25 @@
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Platform } from "react-native";
 
 import { GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from "@/lib/config";
+
+export function configureGoogleSignIn() {
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID || undefined,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+  });
+}
+
+/** Drops the cached Google account so the next sign-in shows the account picker. */
+export async function clearGoogleSession() {
+  if (Platform.OS === "web") return;
+  configureGoogleSignIn();
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // No Google session, or sign-in was never configured on this launch.
+  }
+}
 
 /**
  * Native Google Sign-In does not use a browser redirect.

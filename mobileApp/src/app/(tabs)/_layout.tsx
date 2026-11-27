@@ -1,9 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Brand, Screen } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
+import { Screen } from "@/components/ui";
 import { AdsProvider } from "@/lib/ads-provider";
+import { useAuth } from "@/lib/auth";
+import { useAppTheme } from "@/lib/theme";
 
 type DockProps = {
   state: { index: number; routes: ReadonlyArray<{ key: string; name: string }> };
@@ -14,53 +16,59 @@ type DockProps = {
   bottomInset: number;
 };
 
-function GroupsIcon({ color }: { color: string }) {
-  return (
-    <View style={styles.groupsIcon}>
-      <View style={styles.personBack}>
-        <View style={[styles.head, { backgroundColor: color }]} />
-        <View style={[styles.shoulders, { backgroundColor: color }]} />
-      </View>
-      <View style={styles.personFront}>
-        <View style={[styles.headLg, { backgroundColor: color }]} />
-        <View style={[styles.shouldersLg, { backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
-
-function FriendIcon({ color }: { color: string }) {
-  return (
-    <View style={styles.friendIcon}>
-      <View style={[styles.headLg, { backgroundColor: color }]} />
-      <View style={[styles.shouldersLg, { backgroundColor: color }]} />
-    </View>
-  );
-}
-
 function ExpenseButton() {
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Add expense"
       onPress={() => router.push("/add-expense")}
-      style={({ pressed }) => [styles.expense, pressed && styles.pressed]}>
-      <Text style={styles.expensePlus}>+</Text>
-      <Text style={styles.expenseLabel}>Expense</Text>
+      style={({ pressed }) => [
+        styles.expense,
+        {
+          backgroundColor: colors.moss,
+          backgroundImage: colors.primaryGradient,
+          shadowColor: colors.moss,
+          shadowOpacity: isDark ? 0.38 : 0.28,
+        },
+        pressed && styles.pressed,
+      ]}>
+      {isDark ? <View pointerEvents="none" style={styles.fabSpecular} /> : null}
+      <Ionicons name="add" size={20} color={colors.onAccent} />
+      <Text style={[styles.expenseLabel, { color: colors.onAccent }]}>Expense</Text>
     </Pressable>
   );
 }
 
 function GlassDock({ state, emitter, navigateToTab, bottomInset }: DockProps) {
+  const { colors, isDark } = useAppTheme();
   return (
     <View style={[styles.slot, { paddingBottom: Math.max(bottomInset, 12) }]} pointerEvents="box-none">
       <ExpenseButton />
-      <View style={styles.dock}>
+      <View
+        style={[
+          styles.dock,
+          {
+            backgroundColor: colors.dockBg,
+            borderColor: colors.dockBorder,
+            shadowColor: colors.shadowColor,
+            shadowOpacity: isDark ? 0.55 : 0.1,
+          },
+        ]}>
+        {isDark ? <View pointerEvents="none" style={styles.dockSpecular} /> : null}
         {state.routes.map((route, index) => {
           const active = state.index === index;
           const friends = route.name === "friends";
-          const color = active ? Brand.moss : Brand.muted;
+          const color = active ? colors.moss : colors.muted;
+          const iconName = friends
+            ? active
+              ? "person"
+              : "person-outline"
+            : active
+              ? "people"
+              : "people-outline";
+
           return (
             <Pressable
               key={route.key}
@@ -70,9 +78,22 @@ function GlassDock({ state, emitter, navigateToTab, bottomInset }: DockProps) {
                 const event = emitter.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
                 if (!active && !event.defaultPrevented) navigateToTab(route.key);
               }}
-              style={[styles.tab, active && styles.tabOn]}>
-              {friends ? <FriendIcon color={color} /> : <GroupsIcon color={color} />}
-              <Text style={[styles.tabLabel, active && styles.tabLabelOn]}>{friends ? "Friends" : "Groups"}</Text>
+              style={[
+                styles.tab,
+                active && {
+                  backgroundColor: colors.mossSoft,
+                  borderWidth: 1,
+                  borderColor: colors.mossBorder,
+                },
+              ]}>
+              <Ionicons name={iconName} size={18} color={color} />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  { color: active ? colors.moss : colors.muted, fontWeight: active ? "700" : "600" },
+                ]}>
+                {friends ? "Friends" : "Groups"}
+              </Text>
             </Pressable>
           );
         })}
@@ -83,12 +104,13 @@ function GlassDock({ state, emitter, navigateToTab, bottomInset }: DockProps) {
 
 export default function TabsLayout() {
   const { user, ready } = useAuth();
+  const { colors } = useAppTheme();
 
   if (!ready) {
     return (
       <Screen>
         <View style={styles.loading}>
-          <ActivityIndicator color={Brand.moss} />
+          <ActivityIndicator color={colors.moss} />
         </View>
       </Screen>
     );
@@ -98,28 +120,28 @@ export default function TabsLayout() {
   return (
     <AdsProvider>
       <Tabs
-      tabBar={(props) => (
-        <GlassDock
-          state={props.state}
-          emitter={props.emitter}
-          navigateToTab={props.navigateToTab}
-          bottomInset={props.insets.bottom}
-        />
-      )}
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: Brand.sand },
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "transparent",
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-      }}>
-      <Tabs.Screen name="groups" options={{ title: "Groups" }} />
-      <Tabs.Screen name="friends" options={{ title: "Friends" }} />
-    </Tabs>
+        tabBar={(props) => (
+          <GlassDock
+            state={props.state}
+            emitter={props.emitter}
+            navigateToTab={props.navigateToTab}
+            bottomInset={props.insets.bottom}
+          />
+        )}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: colors.sand },
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: "transparent",
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+        }}>
+        <Tabs.Screen name="groups" options={{ title: "Groups" }} />
+        <Tabs.Screen name="friends" options={{ title: "Friends" }} />
+      </Tabs>
     </AdsProvider>
   );
 }
@@ -134,19 +156,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   dock: {
-    height: 62,
+    height: 64,
     padding: 6,
     borderRadius: 24,
-    backgroundColor: "rgba(14, 17, 27, 0.92)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.11)",
     flexDirection: "row",
     gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 8,
+    overflow: "hidden",
+  },
+  dockSpecular: {
+    position: "absolute",
+    top: 0,
+    left: 20,
+    right: 20,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
   },
   tab: {
     flex: 1,
@@ -155,38 +182,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
-  tabOn: {
-    backgroundColor: "rgba(34,245,158,0.13)",
-    borderWidth: 1,
-    borderColor: "rgba(34,245,158,0.24)",
-  },
-  tabLabel: { color: Brand.muted, fontSize: 11.5, fontWeight: "600" },
-  tabLabelOn: { color: Brand.moss, fontWeight: "700" },
-  pressed: { opacity: 0.86 },
-  groupsIcon: { width: 22, height: 16 },
-  personBack: { position: "absolute", left: 0, bottom: 0, alignItems: "center" },
-  personFront: { position: "absolute", right: 0, bottom: 0, alignItems: "center" },
-  friendIcon: { alignItems: "center", height: 16, justifyContent: "flex-end" },
-  head: { width: 6, height: 6, borderRadius: 3 },
-  shoulders: { width: 10, height: 5, borderTopLeftRadius: 5, borderTopRightRadius: 5, marginTop: 1 },
-  headLg: { width: 7, height: 7, borderRadius: 4 },
-  shouldersLg: { width: 12, height: 6, borderTopLeftRadius: 6, borderTopRightRadius: 6, marginTop: 1 },
+  tabLabel: { fontSize: 11.5 },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
   expense: {
     alignSelf: "flex-end",
     marginBottom: 10,
-    height: 52,
+    height: 50,
     borderRadius: 999,
-    backgroundColor: Brand.moss,
-    paddingHorizontal: 16,
+    paddingLeft: 14,
+    paddingRight: 18,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+    overflow: "hidden",
   },
-  expensePlus: { color: Brand.onAccent, fontSize: 20, fontWeight: "800", marginTop: -1 },
-  expenseLabel: { color: Brand.onAccent, fontSize: 14, fontWeight: "800" },
+  fabSpecular: {
+    position: "absolute",
+    top: 0,
+    left: 14,
+    right: 14,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
+  },
+  expenseLabel: { fontSize: 14.5, fontWeight: "800" },
 });

@@ -56,6 +56,8 @@ npm-debug.*
 mobileApp/.gradle-home/
 mobileApp/.gradle-user-home/
 mobileApp/.gradle-package.log
+mobileApp/.build-tmp/
+mobileApp/.last-release-build.log
 
 # misc
 .DS_Store

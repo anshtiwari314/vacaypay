@@ -2,6 +2,7 @@ import type { RowDataPacket } from "mysql2";
 import { hashOtp, linkMemberships, publicUser, signUser, upsertUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { handle, json, normalizeEmail, readJson } from "@/lib/http";
+import { notifyFirstSignIn, readSignInLocation } from "@/lib/signup-notice";
 
 type OtpRow = RowDataPacket & {
   id: string;
@@ -31,8 +32,9 @@ export function POST(req: Request) {
     }
 
     await query("UPDATE otp_codes SET used = 1 WHERE id = ?", [row.id]);
-    const user = await upsertUser({ email });
+    const { user, created } = await upsertUser({ email });
     await linkMemberships(user);
+    if (created) await notifyFirstSignIn(user, readSignInLocation(body.location));
     const token = await signUser(user);
     return json({ token, user: publicUser(user) });
   });

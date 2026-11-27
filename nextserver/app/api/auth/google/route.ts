@@ -1,6 +1,7 @@
 import { linkMemberships, publicUser, signUser, upsertUser } from "@/lib/auth";
 import { profileFromAccessToken, profileFromIdToken } from "@/lib/google";
 import { handle, json, readJson } from "@/lib/http";
+import { notifyFirstSignIn, readSignInLocation } from "@/lib/signup-notice";
 
 export function POST(req: Request) {
   return handle(async () => {
@@ -10,8 +11,9 @@ export function POST(req: Request) {
     if (!idToken && !accessToken) return json({ error: "Missing Google token" }, 400);
 
     const profile = idToken ? await profileFromIdToken(idToken) : await profileFromAccessToken(accessToken);
-    const user = await upsertUser(profile);
+    const { user, created } = await upsertUser(profile);
     await linkMemberships(user);
+    if (created) await notifyFirstSignIn(user, readSignInLocation(body.location));
     const token = await signUser(user);
     return json({ token, user: publicUser(user) });
   });
